@@ -61,10 +61,18 @@ func (h *HandlerV1) GetAnimal(c *fiber.Ctx) error {
 }
 
 func (h *HandlerV1) PostAnimal(c *fiber.Ctx) error {
-	animal := bson.M{}
+	animal := Animal{}
 	err := c.BodyParser(&animal)
 	if err != nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+
+	// animal exist?
+	filter := bson.M{"dono": animal.Dono, "nome": animal.Nome}
+	err = h.Collection.FindOne(h.Ctx, filter).Err()
+	if err == nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: "this animal already exist"}
 		return c.Status(http.StatusBadRequest).JSON(e)
 	}
 
@@ -88,6 +96,14 @@ func (h *HandlerV1) PutAnimal(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(e)
 	}
 
+	// animal exist?
+	filter := bson.M{"_id": id}
+	err = h.Collection.FindOne(h.Ctx, filter).Err()
+	if err != nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: "animal not found"}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+
 	animal := bson.M{}
 	err = c.BodyParser(&animal)
 	if err != nil {
@@ -98,7 +114,7 @@ func (h *HandlerV1) PutAnimal(c *fiber.Ctx) error {
 		"$set": animal,
 	}
 
-	filter := bson.M{"_id": id}
+	filter = bson.M{"_id": id}
 	_, err = h.Collection.UpdateOne(h.Ctx, filter, bodyUpdate)
 	if err != nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
