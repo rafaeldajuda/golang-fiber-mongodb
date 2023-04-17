@@ -82,9 +82,53 @@ func (h *HandlerV1) PostAnimal(c *fiber.Ctx) error {
 }
 
 func (h *HandlerV1) PutAnimal(c *fiber.Ctx) error {
-	return nil
+	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+
+	animal := bson.M{}
+	err = c.BodyParser(&animal)
+	if err != nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+	bodyUpdate := bson.M{
+		"$set": animal,
+	}
+
+	filter := bson.M{"_id": id}
+	_, err = h.Collection.UpdateOne(h.Ctx, filter, bodyUpdate)
+	if err != nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+
+	msgOk := struct {
+		ID interface{} `json:"_id"`
+	}{ID: id}
+
+	return c.Status(http.StatusOK).JSON(msgOk)
 }
 
 func (h *HandlerV1) DeleteAnimal(c *fiber.Ctx) error {
-	return nil
+	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+
+	filter := bson.M{"_id": id}
+	result, err := h.Collection.DeleteOne(h.Ctx, filter)
+	if err != nil {
+		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
+		return c.Status(http.StatusBadRequest).JSON(e)
+	}
+
+	msgOk := struct {
+		DeletedCount interface{} `json:"deleted_count"`
+	}{DeletedCount: result.DeletedCount}
+
+	return c.Status(http.StatusOK).JSON(msgOk)
 }
