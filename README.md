@@ -28,4 +28,4 @@ docker exec -it my-mongo mongosh -u admin -p admin
 
 
 
-{"nome":"Toby","tipo":"cachorro","idade":4,"dono":"Rafael","castrado":false,"cirurgia":new Date("2023-10-10")}
+{"name":"Toby","type":"cachorro","age":4,"owner":"Rafael","castrated":false,"surgery":new Date("2023-10-10")}

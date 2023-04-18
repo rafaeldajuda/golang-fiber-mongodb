@@ -10,7 +10,7 @@ func Routes(app *fiber.App, api *entity.API) {
 }
 
 func routeV1(app *fiber.App, api *entity.API) {
-	v1 := app.Group("/api/v1")
+	v1 := app.Group("/api/v1/animal")
 
 	v1.Get("/", api.HandlerV1.GetAnimals)
 	v1.Get("/:id", api.HandlerV1.GetAnimal)

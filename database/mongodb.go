@@ -10,12 +10,10 @@ import (
 )
 
 type MongoConfig struct {
-	User       string
-	Password   string
-	Host       string
-	Port       string
-	Database   string
-	Collection string
+	User     string
+	Password string
+	Host     string
+	Port     string
 }
 
 func (mc *MongoConfig) CreateConnection(ctx context.Context) *mongo.Client {

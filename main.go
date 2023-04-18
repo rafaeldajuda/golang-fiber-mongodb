@@ -22,18 +22,18 @@ func init() {
 
 	api.Ctx = context.TODO()
 	api.MongoConfig = database.MongoConfig{
-		User:       os.Getenv("MONGO_USER"),
-		Password:   os.Getenv("MONGO_PASSWORD"),
-		Host:       os.Getenv("MONGO_HOST"),
-		Port:       os.Getenv("MONGO_PORT"),
-		Database:   os.Getenv("MONGO_DATABASE"),
-		Collection: os.Getenv("MONGO_COLLECTION"),
+		User:     os.Getenv("MONGO_USER"),
+		Password: os.Getenv("MONGO_PASSWORD"),
+		Host:     os.Getenv("MONGO_HOST"),
+		Port:     os.Getenv("MONGO_PORT"),
 	}
 	client := api.MongoConfig.CreateConnection(api.Ctx)
 
-	api.HandlerV1.MongoClient = client
-	api.HandlerV1.Collection = client.Database(api.MongoConfig.Database).Collection(api.MongoConfig.Collection)
 	api.HandlerV1.Ctx = api.Ctx
+	api.HandlerV1.Database = os.Getenv("MONGO_DATABASE")
+	api.HandlerV1.Collection = os.Getenv("MONGO_COLLECTION")
+	api.HandlerV1.MongoClient = client
+	api.HandlerV1.MongoCollection = client.Database(api.HandlerV1.Database).Collection(api.HandlerV1.Collection)
 }
 
 func main() {

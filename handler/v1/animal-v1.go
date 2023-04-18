@@ -10,19 +10,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type MsgError struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-}
-
 type HandlerV1 struct {
-	Ctx         context.Context
-	Collection  *mongo.Collection
-	MongoClient *mongo.Client
+	Ctx             context.Context
+	Database        string
+	Collection      string
+	MongoCollection *mongo.Collection
+	MongoClient     *mongo.Client
 }
 
 func (h *HandlerV1) GetAnimals(c *fiber.Ctx) error {
-	cursor, err := h.Collection.Find(h.Ctx, bson.M{})
+	cursor, err := h.MongoCollection.Find(h.Ctx, bson.M{})
 	if err != nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
 		return c.Status(http.StatusBadRequest).JSON(e)
@@ -52,7 +49,7 @@ func (h *HandlerV1) GetAnimal(c *fiber.Ctx) error {
 
 	result := bson.M{}
 	filter := bson.M{"_id": id}
-	err = h.Collection.FindOne(h.Ctx, filter).Decode(result)
+	err = h.MongoCollection.FindOne(h.Ctx, filter).Decode(result)
 	if err != nil {
 		return c.SendStatus(http.StatusNotFound)
 	}
@@ -69,23 +66,20 @@ func (h *HandlerV1) PostAnimal(c *fiber.Ctx) error {
 	}
 
 	// animal exist?
-	filter := bson.M{"dono": animal.Dono, "nome": animal.Nome}
-	err = h.Collection.FindOne(h.Ctx, filter).Err()
+	filter := bson.M{"owner": animal.Owner, "name": animal.Name}
+	err = h.MongoCollection.FindOne(h.Ctx, filter).Err()
 	if err == nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: "this animal already exist"}
 		return c.Status(http.StatusBadRequest).JSON(e)
 	}
 
-	result, err := h.Collection.InsertOne(h.Ctx, animal)
+	result, err := h.MongoCollection.InsertOne(h.Ctx, animal)
 	if err != nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
 		return c.Status(http.StatusBadRequest).JSON(e)
 	}
 
-	msgOk := struct {
-		ID interface{} `json:"_id"`
-	}{ID: result.InsertedID}
-
+	msgOk := MsgOK{ID: result.InsertedID}
 	return c.Status(http.StatusOK).JSON(msgOk)
 }
 
@@ -98,10 +92,10 @@ func (h *HandlerV1) PutAnimal(c *fiber.Ctx) error {
 
 	// animal exist?
 	filter := bson.M{"_id": id}
-	err = h.Collection.FindOne(h.Ctx, filter).Err()
+	err = h.MongoCollection.FindOne(h.Ctx, filter).Err()
 	if err != nil {
-		e := MsgError{Code: http.StatusBadRequest, Msg: "animal not found"}
-		return c.Status(http.StatusBadRequest).JSON(e)
+		e := MsgError{Code: http.StatusNotFound, Msg: "animal not found"}
+		return c.Status(http.StatusNotFound).JSON(e)
 	}
 
 	animal := bson.M{}
@@ -115,16 +109,13 @@ func (h *HandlerV1) PutAnimal(c *fiber.Ctx) error {
 	}
 
 	filter = bson.M{"_id": id}
-	_, err = h.Collection.UpdateOne(h.Ctx, filter, bodyUpdate)
+	_, err = h.MongoCollection.UpdateOne(h.Ctx, filter, bodyUpdate)
 	if err != nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
 		return c.Status(http.StatusBadRequest).JSON(e)
 	}
 
-	msgOk := struct {
-		ID interface{} `json:"_id"`
-	}{ID: id}
-
+	msgOk := MsgOK{ID: id}
 	return c.Status(http.StatusOK).JSON(msgOk)
 }
 
@@ -136,7 +127,7 @@ func (h *HandlerV1) DeleteAnimal(c *fiber.Ctx) error {
 	}
 
 	filter := bson.M{"_id": id}
-	result, err := h.Collection.DeleteOne(h.Ctx, filter)
+	result, err := h.MongoCollection.DeleteOne(h.Ctx, filter)
 	if err != nil {
 		e := MsgError{Code: http.StatusBadRequest, Msg: err.Error()}
 		return c.Status(http.StatusBadRequest).JSON(e)
@@ -145,6 +136,5 @@ func (h *HandlerV1) DeleteAnimal(c *fiber.Ctx) error {
 	msgOk := struct {
 		DeletedCount interface{} `json:"deleted_count"`
 	}{DeletedCount: result.DeletedCount}
-
 	return c.Status(http.StatusOK).JSON(msgOk)
 }
