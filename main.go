@@ -20,6 +20,10 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 
+	api.Name = os.Getenv("PROJECT_NAME")
+	api.Host = os.Getenv("PROJECT_HOST")
+	api.Port = os.Getenv("PROJECT_PORT")
+
 	api.Ctx = context.TODO()
 	api.MongoConfig = database.MongoConfig{
 		User:     os.Getenv("MONGO_USER"),
@@ -49,6 +53,8 @@ func main() {
 	// Routes
 	routes.Routes(app, &api)
 
-	app.Listen(":8000")
-
+	err := app.Listen(api.Host + ":" + api.Port)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
